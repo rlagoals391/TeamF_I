@@ -1,0 +1,1419 @@
+
+import React, { useState, useRef } from 'react';
+import BusanMap from './components/BusanMap';
+import LoadingOverlay from './components/LoadingOverlay';
+import DistrictDetail from './components/DistrictDetail';
+import UsefulServices from './components/UsefulServices';
+import FestivalSection from './components/FestivalSection';
+import ExhibitionSection from './components/ExhibitionSection';
+import CourseSection from './components/CourseSection';
+import { fetchDistrictInsight } from './services/gemini';
+import { MultiLangData, Language } from './types';
+import { BUSAN_DISTRICTS } from './constants';
+
+const App: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState<Language>('ko');
+  const [selectedDistrict, setSelectedDistrict] = useState<{ko: string, en: string} | null>(null);
+  const [reportData, setReportData] = useState<MultiLangData | null>(null);
+  
+  const cache = useRef<Record<string, MultiLangData>>({});
+
+  const handleDistrictClick = async (districtId: string) => {
+    const dist = BUSAN_DISTRICTS.find(d => d.id === districtId);
+    if (!dist) {
+      console.error("District not found:", districtId);
+      return;
+    }
+
+    const names = { ko: dist.nameKo, en: dist.nameEn };
+    
+    if (cache.current[dist.id]) {
+      setSelectedDistrict(names);
+      setReportData(cache.current[dist.id]);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setLoading(true);
+    setSelectedDistrict(names);
+    
+    try {
+      const data = await fetchDistrictInsight(dist.nameKo);
+      cache.current[dist.id] = data;
+      setReportData(data);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error("AI Analysis Error:", err);
+      alert(lang === 'ko' ? "데이터를 분석하는 중 오류가 발생했습니다. 다시 시도해주세요." : "An error occurred while analyzing data. Please try again.");
+      setLoading(false);
+      setSelectedDistrict(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToMap = () => {
+    setReportData(null);
+    setSelectedDistrict(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen relative bg-white pb-20 md:pb-32 text-slate-900 selection:bg-blue-100 transition-colors duration-500 overflow-x-hidden">
+      {/* Language Switcher */}
+      <div className="fixed top-6 right-6 md:top-10 md:right-10 z-[400] flex items-center bg-white/95 backdrop-blur-xl p-1 rounded-full shadow-2xl border border-slate-100">
+        <button 
+          onClick={() => setLang('ko')}
+          className={`px-5 md:px-8 py-2 md:py-3 rounded-full text-[10px] md:text-[13px] font-black tracking-widest transition-all ${lang === 'ko' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          KR
+        </button>
+        <button 
+          onClick={() => setLang('en')}
+          className={`px-5 md:px-8 py-2 md:py-3 rounded-full text-[10px] md:text-[13px] font-black tracking-widest transition-all ${lang === 'en' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          EN
+        </button>
+      </div>
+
+      {!reportData && !loading && (
+        <div className="w-full">
+          {/* Header Section with Wave */}
+          <header className="relative pt-24 md:pt-48 pb-24 md:pb-52 px-6 flex flex-col items-center text-center overflow-hidden mb-32 md:mb-52">
+            <div className="absolute bottom-0 left-0 w-full opacity-10 pointer-events-none translate-y-10">
+              <svg viewBox="0 0 1440 320" className="w-full h-auto scale-150 origin-bottom">
+                <path fill="#2563eb" fillOpacity="1" d="M0,160L48,176C96,192,192,224,288,213.3C384,203,480,149,576,144C672,139,768,181,864,197.3C960,213,1056,203,1152,181.3C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+              </svg>
+            </div>
+
+            <div className="max-w-[1200px] animate-in fade-in slide-in-from-top-4 duration-1000 relative z-10">
+              <div className="inline-flex items-center gap-3 px-5 py-2 md:px-6 md:py-3 bg-slate-900 text-white text-[9px] md:text-[12px] font-black rounded-full mb-10 md:mb-16 tracking-[0.4em] md:tracking-[0.6em] uppercase shadow-2xl">
+                  <span>⚓</span>
+                  {lang === 'ko' ? '부산의 가치를 증명하는 기록' : 'PROVING THE VALUE OF BUSAN'}
+                  <span>⚓</span>
+              </div>
+              <h1 className="text-5xl md:text-8xl lg:text-9xl font-black text-slate-900 tracking-tighter leading-[1.1] md:leading-[0.8] mb-10 md:mb-20 break-keep">
+                {lang === 'ko' ? <>부산 🌊<br/><span className="text-blue-600">오리지널</span></> : <>busan 🌊<br/><span className="text-blue-600">original</span></>}
+              </h1>
+              <p className="text-lg md:text-2xl lg:text-4xl text-slate-400 font-bold max-w-4xl mx-auto leading-relaxed px-4 opacity-80">
+                {lang === 'ko' 
+                  ? '수식어의 거품이 걷힌 자리, 거친 파도가 빚어낸 이 도시의 가장 투명한 맥박을 기록합니다.' 
+                  : 'Where the bubbles of adjectives have cleared, we record the most transparent pulse of this city shaped by rough waves.'}
+              </p>
+            </div>
+          </header>
+
+          {/* Spacing to Essential Utilities Section */}
+          <UsefulServices lang={lang} />
+          <FestivalSection lang={lang} />
+
+          <section className="max-w-[1400px] mx-auto py-16 md:py-32 px-6 md:px-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+               <div className="max-w-3xl">
+                  <h2 className="text-2xl md:text-5xl font-black tracking-tighter mb-4 leading-none">
+                    {lang === 'ko' ? '지도로 마주하는 구역의 본질 ⛵' : 'Encountering the Essence on the Map ⛵'}
+                  </h2>
+                  <p className="text-slate-400 font-bold text-sm md:text-lg">
+                    {lang === 'ko' ? '경계를 넘어 각 구역이 품고 있는 독보적인 가치를 확인하세요' : 'Cross the boundaries to discover the unique values held by each district'}
+                  </p>
+               </div>
+            </div>
+            <div className="bg-slate-50/50 p-4 md:p-16 lg:p-24 rounded-[60px] md:rounded-[100px] border border-slate-100 shadow-inner overflow-hidden relative">
+              <BusanMap onDistrictClick={handleDistrictClick} lang={lang} />
+            </div>
+          </section>
+
+          <CourseSection lang={lang} />
+          <ExhibitionSection lang={lang} />
+        </div>
+      )}
+
+      <main className="w-full">
+        {loading ? (
+          <LoadingOverlay districtName={selectedDistrict ? selectedDistrict[lang] : ""} lang={lang} />
+        ) : reportData && (
+          <DistrictDetail 
+            data={reportData[lang]} 
+            sources={reportData.sources}
+            lang={lang} 
+            onBack={handleBackToMap} 
+          />
+        )}
+      </main>
+    </div>
+  );
+};
+
+export default App;
+
+import React from 'react';
+import { BUSAN_DISTRICTS } from '../constants';
+import { Language } from '../types';
+
+interface BusanMapProps {
+  onDistrictClick: (id: string) => void;
+  lang: Language;
+}
+
+const BusanMap: React.FC<BusanMapProps> = ({ onDistrictClick, lang }) => {
+  return (
+    <div className="w-full max-w-4xl mx-auto relative overflow-hidden group/map">
+      <svg viewBox="0 0 1000 1000" className="w-full h-auto drop-shadow-xl relative z-0">
+        <defs>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="15" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#f8fafc" />
+          </linearGradient>
+        </defs>
+
+        <path 
+          d="M200,600 L380,550 M380,550 L520,560 M520,560 L680,580 M680,580 L780,520 M780,520 L850,300" 
+          stroke="#cbd5e1" 
+          strokeWidth="1.5" 
+          strokeDasharray="8,8"
+          fill="none" 
+          className="opacity-40"
+        />
+        
+        {BUSAN_DISTRICTS.map((dist) => (
+          <g 
+            key={dist.id} 
+            className="group cursor-pointer outline-none"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDistrictClick(dist.id); // ID 직접 전달로 오류 방지
+            }}
+          >
+            <circle
+              cx={dist.x}
+              cy={dist.y}
+              r={dist.size + 15}
+              className="fill-blue-400/0 transition-all duration-700 group-hover:fill-blue-400/20"
+              filter="url(#glow)"
+            />
+            <circle
+              cx={dist.x}
+              cy={dist.y}
+              r={dist.size}
+              className="fill-white/90 stroke-slate-200 stroke-1 transition-all duration-500 group-hover:stroke-blue-400 group-hover:scale-105"
+              style={{ transformOrigin: `${dist.x}px ${dist.y}px`, backdropFilter: 'blur(4px)' }}
+            />
+            <circle
+              cx={dist.x}
+              cy={dist.y}
+              r={dist.size - 8}
+              fill="url(#nodeGradient)"
+              className="stroke-slate-100 stroke-1 transition-all duration-300 group-hover:fill-blue-600 group-hover:stroke-blue-500"
+              style={{ transformOrigin: `${dist.x}px ${dist.y}px` }}
+            />
+            <text
+              x={dist.x}
+              y={dist.y}
+              className="text-[25px] md:text-[32px] font-black fill-slate-500 pointer-events-none group-hover:fill-white transition-all duration-300 tracking-tighter"
+              textAnchor="middle"
+              dominantBaseline="middle"
+            >
+              {lang === 'ko' ? dist.nameKo : dist.nameEn}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+};
+
+export default BusanMap;
+
+import React, { useState } from 'react';
+import { Language } from '../types';
+
+interface CourseSectionProps {
+  lang: Language;
+}
+
+interface SpotDetail {
+  name: string;
+  desc: string;
+}
+
+interface CourseDetail {
+  ko: { 
+    title: string; 
+    tag: string; 
+    desc: string;
+    spots: SpotDetail[];
+    proTip: string;
+    duration: string;
+    transport: string;
+  };
+  en: { 
+    title: string; 
+    tag: string; 
+    desc: string;
+    spots: SpotDetail[];
+    proTip: string;
+    duration: string;
+    transport: string;
+  };
+  color: string;
+  icon: string;
+}
+
+const COURSES: CourseDetail[] = [
+  {
+    ko: { 
+      title: 'K-푸드 챌린지 코스', 
+      tag: 'Foodie', 
+      desc: '비프광장 호떡부터 미슐랭 식당까지, 한국의 매운맛과 정을 느낍니다.',
+      spots: [
+        { name: 'BIFF 광장', desc: '부산 길거리 음식 문화의 발상지이자 씨앗호떡의 성지입니다.' },
+        { name: '자갈치 시장', desc: '활기 넘치는 한국 최대 규모의 수산시장으로 싱싱한 회를 즐길 수 있습니다.' },
+        { name: '남포동 포장마차', desc: '밤이면 펼쳐지는 포장마차 거리에서 부산의 낭만적인 밤을 경험하세요.' }
+      ],
+      proTip: '씨앗호떡은 줄이 길어도 금방 줄어듭니다. 포장마차는 현금이나 계좌이체가 편리해요!',
+      duration: '약 4~5시간',
+      transport: '지하철 1호선 자갈치역/남포역'
+    },
+    en: { 
+      title: 'K-Food Challenge', 
+      tag: 'Foodie', 
+      desc: 'From street Hotteok to Michelin stars, taste the real Korea.',
+      spots: [
+        { name: 'BIFF Square', desc: 'The birthplace of street food culture and the mecca of Seed Hotteok.' },
+        { name: 'Jagalchi Market', desc: "Korea's largest seafood market filled with energy and fresh sashimi." },
+        { name: 'Nampo-dong Stalls', desc: 'Experience the romantic night of Busan at the street food tent area.' }
+      ],
+      proTip: 'Seed Hotteok lines move fast. Street stalls prefer cash or bank transfers.',
+      duration: '4-5 Hours',
+      transport: 'Metro Line 1 (Jagalchi/Nampo Station)'
+    },
+    color: 'bg-orange-600',
+    icon: '🥘'
+  },
+  {
+    ko: { 
+      title: '블루 힐링 바다 산책', 
+      tag: 'Relax', 
+      desc: '해운대 블루라인파크와 해변 열차를 타고 즐기는 끝없는 수평선 여행.',
+      spots: [
+        { name: '해운대 해수욕장', desc: '부산을 상징하는 드넓은 백사장과 시원한 바다를 만끽하세요.' },
+        { name: '미포 철길', desc: '옛 해안 기찻길을 따라 걷는 절경 산책로로 인생샷 명소입니다.' },
+        { name: '청사포 다릿돌 전망대', desc: '푸른 파도 위 투명한 바닥이 주는 스릴과 탁 트인 조망이 일품입니다.' }
+      ],
+      proTip: '해변열차는 일몰 1시간 전에 타는 것을 강력 추천합니다. 예약은 필수예요!',
+      duration: '약 3시간',
+      transport: '해운대 블루라인파크'
+    },
+    en: { 
+      title: 'Ocean View Healing', 
+      tag: 'Relax', 
+      desc: 'A serene journey along the coast with endless horizons and sea breezes.',
+      spots: [
+        { name: 'Haeundae Beach', desc: "Busan's iconic beach with a wide horizon and refreshing breeze." },
+        { name: 'Mipo Railway', desc: 'A scenic walking trail along the old coastal railroad, perfect for photos.' },
+        { name: 'Cheongsapo Skywalk', desc: 'A transparent floor above the crashing blue waves with stunning views.' }
+      ],
+      proTip: 'Book the sunset train 1 hour before golden hour. Reservations are essential.',
+      duration: '3 Hours',
+      transport: 'Haeundae Blue Line Park'
+    },
+    color: 'bg-blue-600',
+    icon: '🌊'
+  },
+  {
+    ko: { 
+      title: 'MZ 힙 플레이스 투어', 
+      tag: 'Trendy', 
+      desc: '전포 카페거리의 감성과 광안리의 화려한 야경을 담는 인스타 명소 투어.',
+      spots: [
+        { name: '전포 카페거리', desc: '공구 상가에서 트렌디한 카페 거리로 변신한 감성 가득한 골목입니다.' },
+        { name: '광안리 해수욕장', desc: '광안대교 뷰와 화려한 야경, 그리고 드론쇼가 펼쳐지는 명소입니다.' },
+        { name: '민락 수변공원', desc: '노을을 보며 가볍게 산책하거나 로컬 감성을 느끼기 좋은 쉼터입니다.' }
+      ],
+      proTip: '전포동 카페들은 월요일 휴무가 많으니 확인 필수! 광안리 드론쇼 시간도 꼭 체크하세요.',
+      duration: '약 6시간',
+      transport: '지하철 2호선 전포역/광안역'
+    },
+    en: { 
+      title: 'MZ Hipster Tour', 
+      tag: 'Trendy', 
+      desc: 'Instagrammable spots from Jeonpo cafe streets to Gwangalli night views.',
+      spots: [
+        { name: 'Jeonpo Cafe Street', desc: 'Trendy cafes filled with unique vibes in a transformed industrial alley.' },
+        { name: 'Gwangalli Beach', desc: 'The best spot for the bridge view, night lights, and the drone show.' },
+        { name: 'Millak Waterside Park', desc: 'A local favorite spot for sunset and enjoying the ocean breeze.' }
+      ],
+      proTip: 'Many Jeonpo cafes close on Mondays. Check the Gwangalli drone show schedule!',
+      duration: '6 Hours',
+      transport: 'Metro Line 2 (Jeonpo/Gwangalli Station)'
+    },
+    color: 'bg-purple-600',
+    icon: '✨'
+  }
+];
+
+const CourseSection: React.FC<CourseSectionProps> = ({ lang }) => {
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
+  const ui = {
+    sectionTitle: lang === 'ko' ? '추천 여행 테마 🌊' : 'Top Travel Themes 🌊',
+    guideHint: lang === 'ko' ? '클릭하여 상세 정보 보기' : 'Click to see details',
+    close: lang === 'ko' ? '닫기' : 'Close',
+    spots: lang === 'ko' ? '방문 스팟 상세 (클릭 시 지도 이동) 📍' : 'Spot Details (Click for Map) 📍',
+    proTip: lang === 'ko' ? '현지 전문가 꿀팁 ⚓' : 'Local Pro Tip ⚓',
+    duration: lang === 'ko' ? '예상 소요 시간' : 'Estimated Duration',
+    transport: lang === 'ko' ? '추천 교통수단' : 'Recommended Transit',
+  };
+
+  const selectedCourse = selectedIdx !== null ? COURSES[selectedIdx] : null;
+
+  const getGoogleMapUrl = (name: string) => {
+    // 쿼리 정확도를 높이기 위해 'Busan' 키워드를 강력 결합
+    const query = encodeURIComponent(`${name} Busan`);
+    return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto mb-40 px-4 relative">
+      <div className="absolute top-0 right-0 -z-10 opacity-5 pointer-events-none">
+        <svg width="400" height="400" viewBox="0 0 400 400">
+          <path d="M0,100 C100,50 200,150 400,100 L400,400 L0,400 Z" fill="#2563eb" />
+        </svg>
+      </div>
+
+      <div className="flex items-center gap-6 mb-12">
+        <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.5em] whitespace-nowrap flex items-center gap-2">
+          {ui.sectionTitle}
+        </h2>
+        <div className="h-px w-full bg-slate-100"></div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {COURSES.map((c, i) => (
+          <div 
+            key={i} 
+            onClick={() => setSelectedIdx(i)}
+            className="group relative p-10 bg-slate-900 rounded-[50px] shadow-xl hover:shadow-[0_30px_60px_rgba(37,99,235,0.2)] hover:scale-[1.02] transition-all duration-500 cursor-pointer overflow-hidden flex flex-col"
+          >
+            <div className={`absolute top-0 right-0 w-32 h-32 ${c.color} opacity-10 blur-3xl rounded-full transition-opacity group-hover:opacity-30`}></div>
+            
+            <div className="relative z-10">
+              <div className="flex justify-between items-start mb-6">
+                <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${c.color} text-white`}>
+                  {c[lang].tag}
+                </span>
+                <span className="text-3xl filter drop-shadow-md group-hover:scale-125 transition-transform duration-500">
+                  {c.icon}
+                </span>
+              </div>
+              
+              <h3 className="text-2xl font-black text-white mb-4 tracking-tighter leading-tight group-hover:text-blue-400 transition-colors">
+                {c[lang].title}
+              </h3>
+              
+              <p className="text-slate-400 text-sm font-bold mb-8 leading-relaxed">
+                {c[lang].desc}
+              </p>
+
+              <div className="mt-4 flex flex-col items-center">
+                 <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest animate-pulse">
+                   {ui.guideHint}
+                 </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Modal Overlay */}
+      {selectedCourse && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-12 animate-in fade-in duration-300">
+          <div 
+            className="absolute inset-0 bg-slate-900/80 backdrop-blur-2xl"
+            onClick={() => setSelectedIdx(null)}
+          ></div>
+          
+          <div className="relative w-full max-w-4xl bg-white rounded-[40px] md:rounded-[60px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-500">
+            {/* Modal Header Decoration */}
+            <div className={`h-40 md:h-60 ${selectedCourse.color} flex items-center justify-center relative`}>
+               <span className="text-7xl md:text-9xl filter drop-shadow-2xl animate-bounce">
+                  {selectedCourse.icon}
+               </span>
+               <button 
+                onClick={() => setSelectedIdx(null)}
+                className="absolute top-6 right-6 md:top-10 md:right-10 w-10 h-10 md:w-14 md:h-14 bg-black/10 hover:bg-black/30 text-white rounded-full flex items-center justify-center transition-all backdrop-blur-md border border-white/20"
+               >
+                 <svg className="w-5 h-5 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12"/></svg>
+               </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-8 md:p-14 lg:p-16 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="mb-12">
+                <span className={`inline-block px-4 py-1.5 rounded-full text-[10px] md:text-[12px] font-black uppercase tracking-[0.2em] mb-4 ${selectedCourse.color} text-white`}>
+                  {selectedCourse[lang].tag}
+                </span>
+                <h2 className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-tight break-keep">
+                  {selectedCourse[lang].title}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16">
+                {/* Left: Spots List */}
+                <div className="lg:col-span-3 space-y-10">
+                  <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-3 flex items-center gap-2">
+                    {ui.spots}
+                  </h4>
+                  <div className="space-y-8">
+                    {selectedCourse[lang].spots.map((spot, idx) => (
+                      <div key={idx} className="group/item flex gap-6">
+                        <div className={`w-10 h-10 rounded-2xl ${selectedCourse.color} text-white flex items-center justify-center font-black shrink-0 shadow-lg`}>
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <a 
+                            href={getGoogleMapUrl(spot.name)} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 text-xl md:text-2xl font-black text-slate-900 mb-2 group-hover/item:text-blue-600 transition-all border-b-2 border-slate-100 hover:border-blue-600"
+                          >
+                            {spot.name}
+                            <svg className="w-4 h-4 text-slate-300 group-hover/item:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                          </a>
+                          <p className="text-sm md:text-base text-slate-500 font-bold leading-relaxed break-keep">
+                            {spot.desc}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right: Pro Tips & Transit */}
+                <div className="lg:col-span-2 space-y-10">
+                  <div className="bg-slate-50 p-8 md:p-10 rounded-[40px] border border-slate-100 shadow-inner relative overflow-hidden">
+                    <div className="absolute top-0 right-0 text-6xl opacity-5 translate-x-4 -translate-y-4">⚓</div>
+                    <h4 className="text-[11px] font-black text-blue-600 uppercase tracking-widest mb-4">
+                      {ui.proTip}
+                    </h4>
+                    <p className="text-[15px] md:text-[17px] text-slate-700 font-bold leading-relaxed break-keep">
+                       {selectedCourse[lang].proTip}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-5">
+                    <div className="flex items-center gap-5 p-6 bg-white border border-slate-100 rounded-[24px] shadow-sm hover:border-blue-200 transition-colors">
+                       <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                       </div>
+                       <div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">{ui.duration}</span>
+                          <span className="text-[15px] md:text-[17px] font-black text-slate-900">{selectedCourse[lang].duration}</span>
+                       </div>
+                    </div>
+                    <div className="flex items-center gap-5 p-6 bg-white border border-slate-100 rounded-[24px] shadow-sm hover:border-emerald-200 transition-colors">
+                       <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                       </div>
+                       <div>
+                          <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">{ui.transport}</span>
+                          <span className="text-[15px] md:text-[17px] font-black text-slate-900">{selectedCourse[lang].transport}</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-10 border-t border-slate-50 bg-slate-50/50 flex justify-center">
+              <button 
+                onClick={() => setSelectedIdx(null)}
+                className="px-16 py-5 bg-slate-900 text-white rounded-full text-[12px] md:text-[14px] font-black uppercase tracking-[0.4em] hover:bg-blue-600 transition-all shadow-2xl active:scale-95"
+              >
+                {ui.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CourseSection;
+
+import React, { useState, useEffect } from 'react';
+import { DistrictData, Language } from '../types';
+
+interface DistrictDetailProps {
+  data: DistrictData;
+  sources: Array<{ title: string; uri: string }>;
+  lang: Language;
+  onBack: () => void;
+}
+
+const DistrictDetail: React.FC<DistrictDetailProps> = ({ data, sources, lang, onBack }) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const ui = {
+    back: lang === 'ko' ? '지도로 돌아가기' : 'Back to Map',
+    michelin: lang === 'ko' ? '미슐랭 가이드 부산' : 'MICHELIN GUIDE BUSAN',
+    landmark: lang === 'ko' ? '놓치면 안 될 대표 명소' : 'Top Essential Landmarks',
+    eats: lang === 'ko' ? '현지 추천 맛집' : 'Recommended Local Eats',
+    copy: lang === 'ko' ? '주소 복사' : 'Copy Addr.',
+    copied: lang === 'ko' ? '복사 완료' : 'Copied',
+    map: lang === 'ko' ? '구글 지도 보기' : 'Google Maps',
+    photo: lang === 'ko' ? '현장 이미지' : 'Photos',
+    menu: lang === 'ko' ? '대표 메뉴' : 'Signature',
+    pro: lang === 'ko' ? 'Real Point' : 'Real Point',
+    tip: lang === 'ko' ? '현지 팁' : 'Local Tip',
+    foreigner: lang === 'ko' ? 'Tourist Friendly' : 'Tourist Friendly',
+    reference: lang === 'ko' ? '정보 출처' : 'Sources',
+    addressLabel: lang === 'ko' ? '위치 정보' : 'Location'
+  };
+
+  return (
+    <div className="max-w-[1200px] mx-auto py-8 md:py-16 lg:py-20 px-6 md:px-12 lg:px-16 animate-in fade-in slide-in-from-bottom-8 duration-700 overflow-hidden relative">
+      <button 
+        onClick={onBack} 
+        className="group mb-12 md:mb-16 flex items-center gap-4 text-slate-400 hover:text-blue-600 font-black text-[11px] md:text-[14px] uppercase tracking-[0.3em] transition-all"
+      >
+        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border border-slate-200 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all shadow-sm">
+           <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M15 19l-7-7 7-7"/>
+           </svg>
+        </div>
+        {ui.back}
+      </button>
+
+      <header className="mb-16 md:mb-24 lg:mb-32 relative">
+        <h1 className="text-5xl md:text-7xl lg:text-[5.5rem] font-black text-slate-900 mb-6 md:mb-12 tracking-tighter leading-none break-keep overflow-wrap-anywhere">
+           {data.name} 🌊
+        </h1>
+        <div className="max-w-4xl border-l-[8px] md:border-l-[12px] border-blue-600 pl-6 md:pl-12 py-4 md:py-6 relative">
+          <p className="text-xl md:text-3xl lg:text-[2.75rem] font-black text-slate-900 mb-4 md:mb-8 leading-tight tracking-tighter italic break-keep">
+            "{data.motto}"
+          </p>
+          <p className="text-sm md:text-lg lg:text-xl text-slate-500 font-bold leading-relaxed tracking-tight break-keep max-w-3xl">
+            {data.aiSummary}
+          </p>
+        </div>
+      </header>
+
+      {/* Michelin Section */}
+      {data.michelin && data.michelin.length > 0 && (
+        <section className="mb-20 md:mb-32 lg:mb-40 bg-[#8B2222] p-8 md:p-14 lg:p-16 rounded-[30px] md:rounded-[60px] relative overflow-hidden shadow-2xl">
+          <div className="flex items-center gap-4 md:gap-8 mb-10 md:mb-16 relative z-10">
+             <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-[#8B2222] shadow-xl">
+                <svg className="w-8 h-8 md:w-10 md:h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+             </div>
+             <div>
+                <h2 className="text-white text-[10px] md:text-[16px] font-black uppercase tracking-[0.4em] mb-1">{ui.michelin}</h2>
+                <div className="h-1 w-20 md:w-32 bg-white/30 rounded-full"></div>
+             </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 relative z-10">
+            {data.michelin.map((m, i) => (
+              <div key={i} className="p-8 md:p-10 bg-white rounded-[32px] md:rounded-[48px] flex flex-col shadow-xl transition-all hover:scale-[1.02] group">
+                <div className="flex justify-between items-start mb-6">
+                  <div className={`px-4 py-1 text-[9px] md:text-[11px] font-black rounded-full uppercase tracking-widest ${m.type.includes('Star') ? 'bg-[#8B2222] text-white' : 'bg-slate-900 text-white'}`}>
+                    {m.type}
+                  </div>
+                  <a href={m.photoSearchUrl} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-[#8B2222] transition-all border border-slate-100">
+                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2 2 2 0 002 2z"/></svg>
+                  </a>
+                </div>
+                <h3 className="text-2xl md:text-3xl font-black text-slate-900 mb-4 tracking-tighter leading-tight break-keep">{m.name}</h3>
+                <p className="text-sm md:text-base text-slate-500 font-bold mb-8 flex-grow leading-relaxed italic break-keep">"{m.description}"</p>
+                
+                {m.foreignerInfo && (
+                  <div className="mb-6 relative p-5 bg-slate-900 rounded-[24px] text-white shadow-lg border border-slate-800">
+                    <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] bg-white/10 px-2 py-0.5 rounded-md text-slate-300 block mb-2 w-fit">{ui.foreigner}</span>
+                    <p className="text-[13px] md:text-[15px] font-black leading-snug break-keep text-slate-100">{m.foreignerInfo}</p>
+                  </div>
+                )}
+
+                <div className="mb-6 pt-6 border-t border-slate-100">
+                   <p className="text-[9px] md:text-[11px] font-black text-slate-300 uppercase mb-2">{ui.menu}</p>
+                   <p className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight break-keep">{m.signature}</p>
+                </div>
+
+                <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-4">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">{ui.addressLabel}</span>
+                    <p className="text-[13px] md:text-[15px] font-bold text-slate-600 leading-tight break-keep">{m.address}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <a href={m.mapUrl} target="_blank" rel="noreferrer" className="py-4 bg-[#8B2222] text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all text-center">
+                      {ui.map}
+                    </a>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(m.address);
+                        setCopiedId(`michelin-${i}`);
+                        setTimeout(() => setCopiedId(null), 2000);
+                      }}
+                      className="py-4 bg-slate-900 text-white rounded-[20px] text-[10px] font-black uppercase tracking-widest hover:bg-[#8B2222] transition-all text-center"
+                    >
+                      {copiedId === `michelin-${i}` ? ui.copied : ui.copy}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {[ 
+        {title: ui.landmark, items: data.landmarks, color: 'blue', bg: 'bg-blue-50/20', border: 'border-blue-100', icon: '⚓'}, 
+        {title: ui.eats, items: data.foods, color: 'emerald', bg: 'bg-emerald-50/20', border: 'border-emerald-100', icon: '⛵'} 
+      ].map((sec, idx) => (
+        <section key={idx} className={`mb-20 md:mb-32 p-8 md:p-14 lg:p-16 rounded-[30px] md:rounded-[60px] border ${sec.border} ${sec.bg}`}>
+          <div className="flex items-center gap-6 mb-12 md:mb-16">
+             <h2 className={`text-[11px] md:text-[16px] font-black text-${sec.color}-600 uppercase tracking-[0.4em] md:tracking-[0.5em] whitespace-nowrap`}>
+              {sec.icon} {sec.title}
+             </h2>
+             <div className={`h-px w-full bg-${sec.color}-200`}></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {sec.items.map((item, i) => (
+              <div key={i} className="bg-white p-8 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-sm flex flex-col transition-all hover:shadow-2xl group">
+                <div className="flex justify-between items-start mb-8">
+                  <h3 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-tight pr-4 group-hover:text-blue-600 transition-colors break-keep">
+                    {item.name}
+                  </h3>
+                  <a href={item.photoSearchUrl} target="_blank" rel="noreferrer" className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-blue-600 transition-all border border-slate-100 shrink-0">
+                    <svg className="w-5 h-5 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2 2 2 0 002 2z"/></svg>
+                  </a>
+                </div>
+                
+                <p className="text-sm md:text-base text-slate-500 font-bold leading-relaxed mb-10 flex-grow tracking-tight break-keep">
+                  {item.description}
+                </p>
+
+                <div className="space-y-4 mb-10">
+                  <div className={`relative p-6 bg-${sec.color}-600 rounded-[24px] md:rounded-[32px] text-white shadow-lg`}>
+                    <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] bg-white/20 px-2 py-0.5 rounded-md block mb-2 w-fit">{ui.pro}</span>
+                    <p className="font-black text-lg md:text-xl leading-tight tracking-tight break-keep">{item.pos}</p>
+                  </div>
+
+                  {item.foreignerInfo && (
+                    <div className="relative p-6 bg-slate-900 rounded-[24px] md:rounded-[32px] text-white shadow-lg border border-slate-800">
+                      <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] bg-white/10 px-2 py-0.5 rounded-md text-slate-300 block mb-2 w-fit">{ui.foreigner}</span>
+                      <p className="font-black text-base md:text-lg leading-snug tracking-tight break-keep text-slate-100">{item.foreignerInfo}</p>
+                    </div>
+                  )}
+                  
+                  <div className="p-6 bg-slate-50 rounded-[24px] md:rounded-[32px] border border-slate-200">
+                    <span className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-2">{ui.tip}</span>
+                    <p className="font-bold text-sm md:text-base leading-snug text-slate-800 tracking-tight break-keep">{item.neg}</p>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-8 border-t border-slate-50 flex flex-col gap-6">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">{ui.addressLabel}</span>
+                    <p className="text-[13px] md:text-[15px] font-bold text-slate-600 leading-tight break-keep">{item.address}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <a href={item.mapUrl} target="_blank" rel="noreferrer" className="py-4 bg-slate-100 text-slate-600 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all text-center">
+                      {ui.map}
+                    </a>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(item.address);
+                        setCopiedId(`${idx}-${i}`);
+                        setTimeout(() => setCopiedId(null), 2000);
+                      }}
+                      className="py-4 bg-slate-900 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all text-center"
+                    >
+                      {copiedId === `${idx}-${i}` ? ui.copied : ui.copy}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      <footer className="pt-20 border-t border-slate-100 opacity-40 pb-20 text-center relative overflow-hidden">
+         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-200 to-transparent"></div>
+         <h4 className="text-[10px] md:text-[13px] font-black text-slate-400 uppercase tracking-[0.6em] mb-12">{ui.reference}</h4>
+         <div className="flex flex-wrap gap-x-10 gap-y-6 justify-center px-4">
+           {sources.map((s, i) => (
+             <a key={i} href={s.uri} target="_blank" rel="noreferrer" className="text-[12px] md:text-[15px] font-black uppercase tracking-widest hover:text-blue-600 transition-all underline decoration-slate-200 underline-offset-[12px] decoration-2">{s.title}</a>
+           ))}
+         </div>
+      </footer>
+    </div>
+  );
+};
+
+export default DistrictDetail;
+
+import React from 'react';
+import { Language } from '../types';
+
+interface ExhibitionSectionProps {
+  lang: Language;
+}
+
+const EVENTS = [
+  {
+    ko: { 
+      title: '부산 시립 미술관 소장품 기획전', 
+      place: '부산시립미술관 (BMA)', 
+      type: '미술 전시',
+      desc: '부산의 근현대 미술사를 관통하는 핵심 소장품을 통해 지역 예술의 깊이 있는 서사를 탐구합니다.'
+    },
+    en: { 
+      title: 'BMA Collection Special Exhibit', 
+      place: 'Busan Museum of Art', 
+      type: 'Art Exhibit',
+      desc: 'Exploring deep narratives of local art through core collections that define Busan\'s modern art history.'
+    },
+    tag: 'Art',
+    color: 'bg-indigo-600',
+    url: 'https://art.busan.go.kr/'
+  },
+  {
+    ko: { 
+      title: 'F1963 현대 미술 메가 프로젝트', 
+      place: 'F1963 석천홀', 
+      type: '융복합 전시',
+      desc: '산업 시설에서 문화 공간으로 탈바꿈한 독특한 아우라 속에서 실험적인 현대 예술가들의 작품을 만납니다.'
+    },
+    en: { 
+      title: 'F1963 Mega Art Project', 
+      place: 'F1963 Cultural Complex', 
+      type: 'Modern Art',
+      desc: 'Experience experimental works by contemporary artists within the unique aura of a renovated wire factory.'
+    },
+    tag: 'Culture',
+    color: 'bg-rose-600',
+    url: 'http://www.f1963.org/'
+  },
+  {
+    ko: { 
+      title: '부산 문화 회관 기획 연주회', 
+      place: '부산문화회관 대극장', 
+      type: '클래식 공연',
+      desc: '세계적인 지휘자와 협연자들이 선사하는 웅장하고 격조 높은 정통 클래식 선율을 경험하세요.'
+    },
+    en: { 
+      title: 'Busan Cultural Concert Series', 
+      place: 'Busan Cultural Center', 
+      type: 'Classic',
+      desc: 'Experience grand and sophisticated classical melodies presented by world-class conductors and soloists.'
+    },
+    tag: 'Music',
+    color: 'bg-amber-600',
+    url: 'https://www.bscc.or.kr/'
+  }
+];
+
+const ExhibitionSection: React.FC<ExhibitionSectionProps> = ({ lang }) => {
+  const title = lang === 'ko' ? '지금 부산의 문화' : 'Busan Cultural Now';
+
+  return (
+    <div className="max-w-5xl mx-auto mb-40 px-4">
+      <div className="flex items-center gap-6 mb-16">
+        <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.5em] whitespace-nowrap">
+          {title}
+        </h2>
+        <div className="h-px w-full bg-slate-100"></div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {EVENTS.map((e, i) => (
+          <a 
+            key={i}
+            href={e.url}
+            target="_blank"
+            rel="noreferrer"
+            className="group p-10 bg-white border border-slate-100 rounded-[50px] hover:border-blue-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-700 flex flex-col"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <span className={`px-3 py-1.5 ${e.color} text-white text-[9px] font-black rounded-full uppercase tracking-widest`}>
+                {e.tag}
+              </span>
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                {e[lang].type}
+              </span>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight group-hover:text-blue-600 transition-colors leading-tight">
+              {e[lang].title}
+            </h3>
+            <p className="text-[14px] font-bold text-slate-400 leading-relaxed mb-10 flex-grow">
+              {e[lang].desc}
+            </p>
+            <div className="pt-8 border-t border-slate-50 flex items-center justify-between">
+              <span className="text-[12px] font-black text-slate-900">{e[lang].place}</span>
+              <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-blue-600 group-hover:text-white flex items-center justify-center transition-all">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default ExhibitionSection;
+
+import React from 'react';
+import { Language } from '../types';
+
+interface FestivalSectionProps {
+  lang: Language;
+}
+
+const FESTIVALS = [
+  {
+    season: { ko: '봄 (Spring)', en: 'Spring' },
+    items: [
+      { ko: '낙동강 유채꽃 축제', en: 'Nakdong River Canola Festival', month: '4', desc: { ko: '국내 최대 규모의 노란 유채꽃 단지에서 즐기는 봄나들이', en: 'Enjoy spring at the nation\'s largest yellow canola field.' } },
+      { ko: '부산항 축제', en: 'Busan Port Festival', month: '5', desc: { ko: '세계 5대 항만인 부산항을 배경으로 열리는 해양 문화 축제', en: 'A maritime festival at the world-class Busan Port.' } }
+    ]
+  },
+  {
+    season: { ko: '여름 (Summer)', en: 'Summer' },
+    items: [
+      { ko: '부산 바다 축제', en: 'Busan Sea Festival', month: '8', desc: { ko: '해운대와 광안리 등 5개 해수욕장에서 펼쳐지는 시원한 파티', en: 'Cool summer parties across Busan\'s major beaches.' } },
+      { ko: '부산 국제 록 페스티벌', en: 'Busan Intl Rock Festival', month: '7-8', desc: { ko: '삼락생태공원에서 펼쳐지는 국내 최장수 록 음악 축제', en: 'Korea\'s longest-running rock festival at Samnak Park.' } }
+    ]
+  },
+  {
+    season: { ko: '가을 (Autumn)', en: 'Autumn' },
+    items: [
+      { ko: '부산 국제 영화제 (BIFF)', en: 'Busan Intl Film Festival', month: '10', desc: { ko: '아시아를 넘어 세계가 주목하는 영화인들의 거대한 축제', en: 'A world-renowned film festival attracting global stars.' } },
+      { ko: '부산 불꽃 축제', en: 'Busan Fireworks Festival', month: '11', desc: { ko: '광안리 밤하늘을 화려하게 수놓는 초대형 멀티미디어 불꽃쇼', en: 'A spectacular multimedia fireworks show over Gwangalli.' } },
+      { ko: '자갈치 축제', en: 'Jagalchi Festival', month: '10', desc: { ko: '오이소! 보이소! 사이소! 한국 최대 수산시장의 정겨운 맛', en: 'The unique taste and culture of Korea\'s largest fish market.' } }
+    ]
+  },
+  {
+    season: { ko: '겨울 (Winter)', en: 'Winter' },
+    items: [
+      { ko: '해운대 빛축제', en: 'Haeundae Light Festival', month: '12-1', desc: { ko: '겨울 바다와 환상적인 빛의 물결이 만나는 낭만적인 현장', en: 'Winter sea meets romantic waves of fantastic lights.' } },
+      { ko: '부산 크리스마스 트리문화축제', en: 'Busan Christmas Tree Festival', month: '12', desc: { ko: '남포동 거리를 화려한 트리와 조명으로 채우는 성탄 축제', en: 'Nampo-dong street glows with magnificent Xmas lights.' } }
+    ]
+  }
+];
+
+const FestivalSection: React.FC<FestivalSectionProps> = ({ lang }) => {
+  const title = lang === 'ko' ? '사계절 축제의 도시' : 'City of All-Season Festivals';
+  
+  return (
+    <div className="max-w-6xl mx-auto mb-40 px-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+      <div className="flex items-center gap-6 mb-16">
+        <h2 className="text-[12px] font-black text-slate-900 uppercase tracking-[0.4em] whitespace-nowrap">
+          {title}
+        </h2>
+        <div className="h-px w-full bg-slate-100"></div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        {FESTIVALS.map((f, i) => (
+          <div key={i} className="group">
+            <h3 className="text-[10px] font-black text-blue-600 mb-8 uppercase tracking-widest border-b-2 border-blue-50 pb-3">
+              {f.season[lang]}
+            </h3>
+            <ul className="space-y-8">
+              {f.items.map((item, idx) => (
+                <li key={idx} className="flex flex-col group/item">
+                  <div className="flex justify-between items-baseline mb-2">
+                    <span className="text-lg font-black text-slate-900 group-hover/item:text-blue-600 transition-colors tracking-tight">
+                      {item[lang]}
+                    </span>
+                    <span className="text-[10px] font-black text-slate-300 uppercase shrink-0 ml-2">
+                      {item.month}{lang === 'ko' ? '월' : ' MO.'}
+                    </span>
+                  </div>
+                  <p className="text-[13px] font-bold text-slate-400 leading-relaxed">
+                    {item.desc[lang]}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default FestivalSection;
+
+import React, { useState, useEffect } from 'react';
+import { Language } from '../types';
+
+interface LoadingOverlayProps {
+  districtName: string;
+  lang: Language;
+}
+
+const TRIVIA_KO = [
+  "부산은 한국전쟁 당시 1,023일 동안 대한민국의 임시 수도였습니다.",
+  "밀면은 전쟁 중 메밀 대신 구호 물자인 밀가루로 만든 부산만의 냉면입니다.",
+  "돼지국밥은 피란 시절 배고픔을 달래주던 부산의 대표적인 소울푸드입니다.",
+  "영도대교는 한국 유일의 도개교로, 피란민들이 다시 만나기로 약속했던 장소입니다.",
+  "감천문화마을은 산자락을 따라 계단식으로 집들이 늘어선 '한국의 산토리니'입니다.",
+  "보수동 책방골목은 전쟁 당시 피란민들이 가져온 책을 팔며 형성된 유서 깊은 거리입니다.",
+  "산복도로는 산등성이를 따라 굽이굽이 이어지는 부산만의 독특한 풍경입니다.",
+  "송도 해수욕장은 1913년에 개장한 대한민국 최초의 공설 해수욕장입니다.",
+  "태종대는 파도의 침식으로 만들어진 기암괴석이 장관을 이루는 해안 절벽입니다.",
+  "범어사는 신라 시대에 창건된 천년 고찰로 부산을 대표하는 사찰입니다.",
+  "오륙도는 조석에 따라 섬이 5개 또는 6개로 보인다고 하여 붙여진 이름입니다.",
+  "부산항은 세계 10대 컨테이너 항만 중 하나로 한국 수출의 심장입니다.",
+  "낙동강 하구는 세계적인 철새 도래지로 생태적 가치가 매우 높습니다.",
+  "광안대교는 총 길이 7.42km로 한국 최대 규모의 현수교입니다.",
+  "자갈치 시장의 이름은 옛날 이곳에 '자갈'이 많았다고 하여 붙여졌습니다.",
+  "부산 국제 영화제(BIFF)는 아시아 최대 규모의 영화 축제입니다.",
+  "해운대 엘시티(LCT)는 411m 높이로 한국에서 두 번째로 높은 마천루입니다.",
+  "부산의 사투리는 15세기 중세 한국어의 성조 특징이 일부 남아있습니다.",
+  "누리마루 APEC 하우스는 2005년 제13차 APEC 정상회의가 열린 역사적인 장소입니다.",
+  "가덕도 등대는 1909년에 점등된 서구식 근대 건축물로 역사적 가치가 큽니다.",
+  "부산의 UN기념공원은 세계에서 유일한 UN군 묘지입니다.",
+  "금정산성은 전체 길이가 약 18.8km에 달하는 한국에서 가장 큰 산성입니다.",
+  "동래파전은 조선 시대 동래부사가 임금님께 진상하던 귀한 음식었습니다.",
+  "부산 도시철도 1호선은 1985년 개통된 지방 최초의 지하철입니다.",
+  "초량 이바구길은 일제강점기부터 전쟁 이후까지 부산의 근현대사를 품고 있습니다.",
+  "흰여울문화마을은 영화 '변호인'의 촬영지로 유명하며 절벽 끝 바다 조망이 일품입니다.",
+  "부산 해운대구는 전국에서 유일하게 두 개의 해수욕장(해운대, 송정)을 품고 있습니다.",
+  "부산항 대교는 밤이 되면 시시각각 변하는 화려한 조명으로 야경 명소가 되었습니다.",
+  "해동용궁사는 바닷가 절벽 위에 세워진 한국에서 가장 아름다운 사찰 중 하나입니다.",
+  "부산역 앞 차이나타운은 구한말 청나라 영사관이 있던 자리에서 시작되었습니다.",
+  "용두산공원의 부산타워는 120m 높이에서 원도심의 정취를 한눈에 볼 수 있습니다."
+];
+
+const TRIVIA_EN = [
+  "Busan served as the provisional capital of South Korea for 1,023 days during the Korean War.",
+  "Milmyeon is a unique Busan noodle dish created using flour instead of buckwheat during the war.",
+  "Dwaeji-gukbap (pork soup) is Busan's soul food that comforted hungry refugees during the war.",
+  "Yeongdo Bridge is Korea's only bascule bridge, once a landmark for reunited refugees.",
+  "Gamcheon Culture Village is known as the 'Santorini of Korea' with colorful houses on hills.",
+  "Bosu-dong Book Alley was formed by refugees selling books to survive during the war.",
+  "San복-ro (mountainside roads) offer unique winding landscapes along the city's ridges.",
+  "Songdo Beach, opened in 1913, is the first public beach in South Korea.",
+  "Taejongdae is a coastal cliff featuring spectacular rock formations carved by the waves.",
+  "Beomeosa is a thousand-year-old temple founded during the Silla Dynasty.",
+  "Oryukdo Islands are named so because they appear as 5 or 6 islands depending on the tide.",
+  "Busan Port is one of the world's top 10 container ports and the heart of Korea's exports.",
+  "The Nakdong River Estuary is a world-renowned habitat for migratory birds.",
+  "Gwangandaegyo is the largest suspension bridge in Korea, stretching 7.42km.",
+  "Jagalchi Market's name originates from 'Jagal' (gravel) that once covered the shore.",
+  "Busan International Film Festival (BIFF) is the largest film festival in Asia.",
+  "Haeundae LCT, at 411m, is the second-tallest building in South Korea.",
+  "The Busan dialect retains some pitch accent characteristics of 15th-century Korean.",
+  "Nurimaru APEC House is the historic site where the 13th APEC Summit was held in 2005.",
+  "Gadeokdo Lighthouse is a Western-style modern building lit in 1909.",
+  "The UN Memorial Cemetery in Busan is the only UN cemetery in the world.",
+  "Geumjeongsanseong is the largest mountain fortress in Korea, about 18.8km long.",
+  "Dongrae Pajeon was a precious dish presented to the king during the Joseon Dynasty.",
+  "The Busan Metro Line 1, opened in 1985, was the first subway outside of Seoul.",
+  "Choryang Ibagu-gil contains Busan's modern history from Japanese occupation to post-war.",
+  "Huinnyeoul Culture Village is famous as the filming location for the movie 'The Attorney'.",
+  "Haeundae-gu is the only district in Korea with two major beaches (Haeundae, Songjeong).",
+  "Busan Harbor Bridge is a night landmark with colorful lights changing every moment.",
+  "Haedong Yonggungsa is one of Korea's most beautiful temples, built on a coastal cliff.",
+  "Chinatown in front of Busan Station began at the site of the former Qing Consulate.",
+  "Busan Tower in Yongdusan Park offers a panoramic view of the old city from 120m high."
+];
+
+const LoadingOverlay: React.FC<LoadingOverlayProps> = ({ districtName, lang }) => {
+  const [triviaIdx, setTriviaIdx] = useState(0);
+  const trivia = lang === 'ko' ? TRIVIA_KO : TRIVIA_EN;
+
+  useEffect(() => {
+    setTriviaIdx(Math.floor(Math.random() * trivia.length));
+    
+    const triviaInterval = setInterval(() => {
+      setTriviaIdx((prev) => (prev + 1) % trivia.length);
+    }, 4500); 
+    return () => clearInterval(triviaInterval);
+  }, [trivia.length]);
+
+  return (
+    <div className="fixed inset-0 z-[150] bg-white flex flex-col items-center justify-center px-6 md:px-12 overflow-hidden">
+      {/* Background Wave Animation */}
+      <div className="absolute bottom-0 left-0 w-full opacity-5 pointer-events-none">
+        <svg viewBox="0 0 1440 320" className="w-full h-auto translate-y-20">
+          <path fill="#2563eb" fillOpacity="1" d="M0,64L48,96C96,128,192,192,288,181.3C384,171,480,85,576,80C672,75,768,149,864,186.7C960,224,1056,224,1152,197.3C1248,171,1344,117,1392,90.7L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+      </div>
+
+      <div className="w-full max-w-4xl flex flex-col items-center text-center relative z-10">
+        
+        {/* Spinner - Optimized Size */}
+        <div className="relative w-20 h-20 md:w-32 md:h-32 mb-8 md:mb-12 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-[5px] md:border-[8px] border-slate-50"></div>
+          <div className="absolute inset-0 rounded-full border-[5px] md:border-[8px] border-blue-600 border-t-transparent animate-spin"></div>
+          <div className="flex flex-col items-center">
+            <span className="text-[10px] md:text-lg font-black text-slate-900 leading-none tracking-tighter uppercase">REAL</span>
+            <span className="text-[6px] md:text-[9px] font-black text-blue-600 tracking-[0.2em] uppercase mt-1">Insight</span>
+          </div>
+        </div>
+
+        <h2 className="text-3xl md:text-5xl lg:text-6xl font-black text-slate-900 mb-8 md:mb-12 tracking-tighter break-keep leading-tight drop-shadow-sm">
+          {districtName} ⚓
+        </h2>
+        
+        {/* Trivia Box - Scaled Down for Balance */}
+        <div className="w-full mb-8 md:mb-12 max-w-3xl px-4">
+          <div className="mb-5 flex flex-col items-center gap-2">
+            <p className="text-[9px] md:text-[12px] font-black text-blue-600 uppercase tracking-[0.3em] opacity-90">
+              {lang === 'ko' ? '현지의 생생한 목소리를 수집하는 중' : 'COLLECTING REAL LOCAL VOICES'}
+            </p>
+          </div>
+
+          <div className="px-8 py-10 md:px-14 md:py-16 bg-slate-50 rounded-[24px] md:rounded-[40px] border border-slate-100 relative min-h-[140px] md:min-h-[200px] flex items-center justify-center shadow-inner overflow-hidden">
+            <p key={`${lang}-${triviaIdx}`} className="text-slate-800 text-base md:text-xl lg:text-2xl font-bold leading-snug animate-in fade-in slide-in-from-bottom-2 duration-1000 break-keep max-w-[90%] px-2 z-10 relative">
+              {trivia[triviaIdx]}
+            </p>
+            
+            {/* Decorative corners - Subtle Scale */}
+            <div className="absolute top-5 left-5 md:top-8 md:left-8 w-5 h-5 md:w-10 md:h-10 border-t-[2px] border-l-[2px] border-slate-200"></div>
+            <div className="absolute bottom-5 right-5 md:bottom-8 md:right-8 w-5 h-5 md:w-10 md:h-10 border-b-[2px] border-r-[2px] border-slate-200"></div>
+            
+            {/* Watermark - Discrete Scale */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-200/30 text-[5rem] md:text-[8rem] font-black pointer-events-none select-none z-0 opacity-10 uppercase">
+               Busan
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex gap-3.5 items-center">
+          <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]"></div>
+          <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full bg-blue-400 animate-bounce [animation-delay:-0.15s]"></div>
+          <div className="w-1.5 h-1.5 md:w-2.5 md:h-2.5 rounded-full bg-blue-200 animate-bounce"></div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoadingOverlay;
+
+import React from 'react';
+import { Language } from '../types';
+
+interface UsefulServicesProps {
+  lang: Language;
+}
+
+const SERVICES = [
+  {
+    id: 'citytour',
+    ko: { title: '부산 시티투어', desc: '주요 명소를 가장 편안하게 돌아보는 2층 테마 버스', action: '예약 사이트' },
+    en: { title: 'City Tour Bus', desc: 'The most comfortable way to visit key spots via theme buses.', action: 'Official Site' },
+    url: 'https://www.citytourbusan.com/',
+    color: 'bg-blue-600'
+  },
+  {
+    id: 'busanpass',
+    ko: { title: '비짓 부산 패스', desc: '주요 유료 명소 무료 입장과 교통 카드 혜택의 올인원 패스', action: '패스 구매' },
+    en: { title: 'Visit Busan Pass', desc: 'All-in-one pass with free entry to major spots & transit.', action: 'Get Pass' },
+    url: 'https://www.visitbusanpass.com/',
+    color: 'bg-slate-900'
+  },
+  {
+    id: 'dynamic',
+    ko: { title: '비짓 부산 공식', desc: '부산시가 운영하는 공신력 있는 공식 관광 포털 서비스', action: '정보 포털' },
+    en: { title: 'Visit Busan Official', desc: 'The city\'s official, authoritative tourism info portal.', action: 'Explore Portal' },
+    url: 'https://www.visitbusan.net/',
+    color: 'bg-emerald-600'
+  }
+];
+
+const UsefulServices: React.FC<UsefulServicesProps> = ({ lang }) => {
+  const sectionTitle = lang === 'ko' ? '여행 필수 유틸리티' : 'Travel Essentials';
+
+  return (
+    <div className="max-w-5xl mx-auto mb-20 px-4 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
+      <div className="flex items-center gap-6 mb-12">
+        <h2 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.5em] whitespace-nowrap">
+          {sectionTitle}
+        </h2>
+        <div className="h-px w-full bg-slate-100"></div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {SERVICES.map((s) => (
+          <a 
+            key={s.id}
+            href={s.url}
+            target="_blank"
+            rel="noreferrer"
+            className="group block p-10 bg-white border border-slate-100 rounded-[50px] hover:shadow-4xl hover:shadow-slate-200/50 transition-all duration-700"
+          >
+            <div className={`w-12 h-12 ${s.color} rounded-2xl mb-8 flex items-center justify-center text-white transition-all group-hover:rotate-6 group-hover:scale-110 shadow-lg`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-black text-slate-900 mb-3 tracking-tight group-hover:text-blue-600 transition-colors">
+              {s[lang].title}
+            </h3>
+            <p className="text-sm font-bold text-slate-400 leading-relaxed mb-8">
+              {s[lang].desc}
+            </p>
+            <div className="flex items-center gap-3">
+               <span className="text-[11px] font-black uppercase tracking-widest text-slate-900 border-b-2 border-slate-900 pb-1 group-hover:text-blue-600 group-hover:border-blue-600 transition-all">
+                 {s[lang].action}
+               </span>
+               <svg className="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default UsefulServices;
+
+import { MapDistrict } from './types';
+
+export const BUSAN_DISTRICTS: MapDistrict[] = [
+  { id: 'gangseogu', nameKo: '강서구', nameEn: 'Gangseo', x: 80, y: 550, size: 85 },
+  { id: 'bukgu', nameKo: '북구', nameEn: 'Buk-gu', x: 260, y: 250, size: 75 },
+  { id: 'sasanggu', nameKo: '사상구', nameEn: 'Sasang', x: 260, y: 480, size: 70 },
+  { id: 'sahagu', nameKo: '사하구', nameEn: 'Saha-gu', x: 220, y: 720, size: 75 },
+  { id: 'geumjeong', nameKo: '금정구', nameEn: 'Geumjeong', x: 480, y: 120, size: 85 },
+  { id: 'dongrae', nameKo: '동래구', nameEn: 'Dongrae', x: 480, y: 320, size: 75 },
+  { id: 'yeonje', nameKo: '연제구', nameEn: 'Yeonje', x: 620, y: 400, size: 60 },
+  { id: 'busanjingu', nameKo: '부산진구', nameEn: 'Busanjin', x: 420, y: 530, size: 85 },
+  { id: 'suyeong', nameKo: '수영구', nameEn: 'Suyeong', x: 740, y: 520, size: 65 },
+  { id: 'namgu', nameKo: '남구', nameEn: 'Nam-gu', x: 700, y: 720, size: 75 },
+  { id: 'haeundae', nameKo: '해운대구', nameEn: 'Haeundae', x: 880, y: 450, size: 95 },
+  { id: 'gijang', nameKo: '기장군', nameEn: 'Gijang', x: 920, y: 180, size: 105 },
+  { id: 'donggu', nameKo: '동구', nameEn: 'Dong-gu', x: 480, y: 680, size: 60 },
+  { id: 'junggu', nameKo: '중구', nameEn: 'Jung-gu', x: 400, y: 800, size: 50 },
+  { id: 'seogu', nameKo: '서구', nameEn: 'Seo-gu', x: 320, y: 880, size: 60 },
+  { id: 'yeongdo', nameKo: '영도구', nameEn: 'Yeongdo', x: 550, y: 880, size: 70 }
+];
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>부산의 재발견 - 실전 로컬 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); }
+        @keyframes kenBurns {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        .ken-burns { animation: kenBurns 10s infinite alternate linear; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+</body>
+</html>
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Could not find root element to mount to");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+  "name": "Copy of Busan Real Discovery",
+  "description": "An interactive AI-powered guide to Busan's districts, featuring real-time insights from YouTube, Naver, and blogs using Gemini 3 and Google Search grounding.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
+import { GoogleGenAI, Type } from "@google/genai";
+import { MultiLangData, Landmark, Food, MichelinRestaurant } from "../types";
+
+export async function fetchDistrictInsight(districtName: string): Promise<MultiLangData> {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  const systemInstruction = `You are a "Busan Docent" providing travel reports under the brand "Busan Original".
+
+  [CRITICAL: DATA INTEGRITY]
+  - Especially for Haeundae-gu, ensure the JSON is complete. If many items exist, prioritize the most famous ones.
+  - The "address" field MUST be a real physical address (e.g., "62, Gu-nam-ro, Haeundae-gu, Busan"), NOT a URL.
+
+  [CRITICAL: MAP ACCURACY]
+  - For Map URLs, always use this template to ensure South Korea location:
+    https://www.google.com/maps/search/?api=1&query=[PlaceName]+${districtName}+Busan+South+Korea
+  - Use the most official and specific names.`;
+
+  const prompt = `Generate an authoritative "Busan Original" report for "${districtName}" district in both Korean and English.
+  
+  Content:
+  - 5 Landmarks, 5 Eateries.
+  - Official Michelin Guide Busan entries.
+  - Return PURE JSON object only.
+
+  JSON Schema:
+  {
+    "ko": {
+      "name": "구역 이름", "motto": "슬로건", "aiSummary": "요약",
+      "landmarks": [{"name": "명소명", "description": "설명", "pos": "장점", "neg": "팁", "foreignerInfo": "외국인정보", "address": "실제주소"}],
+      "foods": [{"name": "식당명", "description": "설명", "pos": "장점", "neg": "팁", "foreignerInfo": "외국인정보", "address": "실제주소", "bestMenu": "메뉴"}],
+      "michelin": [{"name": "식당명", "type": "등급", "description": "설명", "foreignerInfo": "외국인정보", "address": "실제주소", "signature": "메뉴"}]
+    },
+    "en": {
+      "name": "District", "motto": "Slogan", "aiSummary": "Summary",
+      "landmarks": [{"name": "Name", "description": "Desc", "pos": "Pro", "neg": "Tip", "foreignerInfo": "Info", "address": "Physical Address"}],
+      "foods": [{"name": "Name", "description": "Desc", "pos": "Pro", "neg": "Tip", "foreignerInfo": "Info", "address": "Physical Address", "bestMenu": "Menu"}],
+      "michelin": [{"name": "Name", "type": "Type", "description": "Desc", "foreignerInfo": "Info", "address": "Physical Address", "signature": "Menu"}]
+    }
+  }`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview", 
+      contents: prompt,
+      config: {
+        systemInstruction,
+        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json"
+      }
+    });
+
+    let jsonText = response.text || '{}';
+    jsonText = jsonText.replace(/```json|```/g, '').trim();
+    
+    const rawData = JSON.parse(jsonText);
+    
+    const processItems = (items: any[]) => {
+      if (!items || !Array.isArray(items)) return [];
+      return items.filter(item => item && (item.name || item.title)).map(item => {
+        const name = item.name || item.title;
+        // 더욱 정교해진 검색 쿼리: 장소명 + 구 + 부산 + 한국
+        const searchQuery = encodeURIComponent(`${name} ${districtName} Busan South Korea`);
+        return {
+          ...item,
+          name: name,
+          address: item.address && !item.address.startsWith('http') ? item.address : `${districtName}, Busan`,
+          mapUrl: `https://www.google.com/maps/search/?api=1&query=${searchQuery}`,
+          photoSearchUrl: `https://www.google.com/search?tbm=isch&q=${searchQuery}`
+        };
+      });
+    };
+
+    return {
+      ko: {
+        ...rawData.ko,
+        name: rawData.ko?.name || districtName,
+        landmarks: processItems(rawData.ko?.landmarks),
+        foods: processItems(rawData.ko?.foods),
+        michelin: processItems(rawData.ko?.michelin)
+      },
+      en: {
+        ...rawData.en,
+        name: rawData.en?.name || districtName,
+        landmarks: processItems(rawData.en?.landmarks),
+        foods: processItems(rawData.en?.foods),
+        michelin: processItems(rawData.en?.michelin)
+      },
+      sources: (response.candidates?.[0]?.groundingMetadata?.groundingChunks || [])
+        .filter((c: any) => c.web).map((c: any) => ({ title: c.web.title, uri: c.web.uri })).slice(0, 5)
+    };
+  } catch (error) {
+    console.error("AI Fetching Error:", error);
+    throw error;
+  }
+}
+
+export interface Landmark {
+  name: string;
+  description: string;
+  pos: string;
+  neg: string;
+  address: string;
+  mapUrl: string;
+  photoSearchUrl: string;
+  foreignerInfo?: string; // 채식 옵션, 영어 안내 등 외국인 대상 정보
+}
+
+export interface Food {
+  name: string;
+  description: string;
+  pos: string;
+  neg: string;
+  address: string;
+  mapUrl: string;
+  photoSearchUrl: string;
+  bestMenu: string;
+  foreignerInfo?: string; // 채식 옵션, 영어 메뉴판 등 외국인 대상 정보
+}
+
+export interface MichelinRestaurant {
+  name: string;
+  type: 'Star' | 'Bib Gourmand' | 'Selected';
+  description: string;
+  address: string;
+  signature: string;
+  mapUrl: string;
+  photoSearchUrl: string;
+  foreignerInfo?: string;
+}
+
+export interface DistrictData {
+  name: string;
+  motto: string;
+  aiSummary: string;
+  landmarks: Landmark[];
+  foods: Food[];
+  michelin: MichelinRestaurant[];
+}
+
+export interface MultiLangData {
+  ko: DistrictData;
+  en: DistrictData;
+  sources: Array<{ title: string; uri: string }>;
+}
+
+export interface MapDistrict {
+  id: string;
+  nameKo: string;
+  nameEn: string;
+  x: number;
+  y: number;
+  size: number;
+}
+
+export type Language = 'ko' | 'en';
