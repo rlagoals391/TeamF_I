@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busan Real Discovery | 부산의 진짜 매력을 발견하다</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .card-hover:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px -12px rgba(59, 130, 246, 0.2);
+        }
+        .transition-all {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .main-project-title {
+            word-break: keep-all;
+            white-space: nowrap;
+        }
+        @media (max-width: 1024px) {
+            .main-project-title {
+                white-space: normal;
+            }
+        }
+        /* 애니메이션 아이콘 효과 */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-icon {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+
+    <!-- 히어로 섹션 -->
+    <section id="home" class="pt-24 pb-12 px-4 bg-gradient-to-b from-blue-50/50 to-white overflow-hidden">
+        <div class="max-w-7xl mx-auto text-center relative">
+            <div class="absolute -top-24 -left-24 w-64 h-64 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+            <div class="absolute -top-24 -right-24 w-64 h-64 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+
+            <div class="max-w-6xl mx-auto mb-4">
+                <h1 class="main-project-title text-3xl md:text-5xl lg:text-6xl font-extrabold mb-8 leading-tight tracking-tight text-slate-900 border-b-8 border-blue-600 pb-8 inline-block">
+                    데이터로 쓰는 'Global Busan' 가이드
+                </h1>
+                <div class="mt-2">
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-4">유튜브·SNS 반응 분석을 통한 관광객 맞춤형 맛집/명소 큐레이션</h2>
+                    <p class="text-base md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                        데이터 분석을 통한 객관적인 인사이트로 <br>
+                        부산의 <span class="text-blue-600 font-bold underline">진짜 가치</span>를 새롭게 정의합니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 서비스 특징 섹션 -->
+    <section id="services" class="py-8 px-4 bg-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-3 gap-6 lg:gap-10">
+                <!-- 카드 1: 웹사이트 (1.html로 연결) -->
+                <a href="1.html" class="card-hover group bg-slate-50 rounded-[32px] p-10 text-center transition-all border border-transparent hover:border-blue-200 flex flex-col items-center shadow-sm">
+                    <div class="w-24 h-24 bg-white shadow-xl shadow-blue-100 rounded-[24px] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-blue-600 transition-colors">웹사이트</h3>
+                    <p class="text-slate-500 text-base leading-relaxed mb-6">
+                        수집된 방대한 관광 데이터를 <br>
+                        실시간으로 시각화하여 제공하는 웹사이트입니다.
+                    </p>
+                    <div class="px-6 py-2 bg-blue-100 text-blue-700 rounded-full font-bold group-hover:bg-blue-600 group-hover:text-white transition-all text-sm">
+                        웹사이트 열기
+                    </div>
+                </a>
+
+                <!-- 카드 2: 스토리북 (2.html로 연결) -->
+                <a href="2.html" class="card-hover group bg-slate-50 rounded-[32px] p-10 text-center transition-all border border-transparent hover:border-sky-200 flex flex-col items-center shadow-sm">
+                    <div class="w-24 h-24 bg-white shadow-xl shadow-sky-100 rounded-[24px] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-sky-500 group-hover:text-white transition-all duration-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.247 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-sky-600 transition-colors">스토리북</h3>
+                    <p class="text-slate-500 text-base leading-relaxed mb-6">
+                        데이터로 쓰는 'Global Busan' 가이드를 활용하여 <br>
+                        여행한 외국인 가족의 관광 <br> 이야기입니다.
+                    </p>
+                    <div class="px-6 py-2 bg-sky-100 text-sky-700 rounded-full font-bold group-hover:bg-sky-500 group-hover:text-white transition-all text-sm">
+                        스토리북 읽기
+                    </div>
+                </a>
+
+                <!-- 카드 3: 애니메이션 (3.html로 연결) -->
+                <a href="3.html" class="card-hover group bg-slate-50 rounded-[32px] p-10 text-center transition-all border border-transparent hover:border-indigo-200 flex flex-col items-center shadow-sm">
+                    <div class="w-24 h-24 bg-white shadow-xl shadow-indigo-100 rounded-[24px] flex items-center justify-center mb-6 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 animate-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 group-hover:text-indigo-600 transition-colors">애니메이션</h3>
+                    <p class="text-slate-500 text-base leading-relaxed mb-6">
+                        외국인 가족의 <br>
+                        부산 관광 이야기를 <br> 애니메이션으로도 만나보세요.
+                    </p>
+                    <div class="px-6 py-2 bg-indigo-100 text-indigo-700 rounded-full font-bold group-hover:bg-indigo-600 group-hover:text-white transition-all text-sm">
+                        애니메이션 보기
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 푸터 -->
+    <footer class="py-8 bg-white text-center text-slate-400 border-t border-slate-100">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="font-bold text-blue-600 mb-2 tracking-tighter text-lg uppercase font-extrabold">Busan Real Discovery</div>
+            <p class="text-sm">© 2026 BRD Labs. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+</body>
+</html>
